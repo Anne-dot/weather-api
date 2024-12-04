@@ -1,0 +1,3 @@
+alguses teen web.php -ga nagu tunnis tegime ja siis proovin teha RESTful API
+
+
