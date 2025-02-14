@@ -1,5 +1,0 @@
-alguses teen web.php -ga nagu tunnis tegime ja siis proovin teha RESTful API
-
-# linna nime sisestamine on kohustuslik ja min 2 t2hem2rki
-
-
