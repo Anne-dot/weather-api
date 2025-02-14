@@ -10,54 +10,47 @@ use Illuminate\Support\Facades\Log;
 class WeatherController extends Controller
 {
 
-    public function index() {
-        return view('weather.index');
+    public function index()
+    {
+        // Check if we have weather data in the session
+        $weatherData = session('weatherData');
+        return view('weather.index', compact('weatherData'));
     }
-    
-    // public function getWeather($city)
-    // {
 
-    //     // Log the cache status
-    //     if (Cache::has("weather_{$city}")) {
-    //         // Log when the data is fetched from the cache
-    //         Log::info("Weather data found in cache for {$city}.");
-    //     } else {
-    //         // Log when no cache is found
-    //         Log::info("No weather data found for {$city} in cache.");
-    //     }
-    //     // Check if the weather data for this city is cached
-    //     $weather = Cache::remember("weather_{$city}", 3600, function () use ($city) {
-
-    //         // Log when the data is being fetched from the API (not cache)
-    //         Log::info("Fetching weather data for {$city} from the API.");
-
-    //         // Make the API request to OpenWeatherMap
-    //         $response = Http::get("https://pro.openweathermap.org/data/2.5/weather", [
-    //             'q' => $city,
-    //             'appid' => env('WEATHER_API_KEY'),
-    //             'units' => 'metric',  // Optional: for temperature in Celsius
-    //         ]);
-
-    //         // Return the response as JSON
-    //         return $response->json();
-    //     });
-    //     // Get the weather icon code and the url of the icon - 
-    //     // https://openweathermap.org/weather-conditions#Weather-Condition-Codes-2
-
-    //     // Return the weather data as a JSON response
-    //     return response()->json($weather);
-    // }
-
-    public function getWeather(Request $request){
-
-        // dd($request);
-        $request->validate([
-            'city'=> 'required|min:2|max:100',
+    public function search(Request $request)
+    {
+        $validated = $request->validate([
+            'city' => 'required|min:2'
+        ], [
+            'city.required' => "Please enter city name",
+            'city.min' => "City name must be at least 2 characters"
         ]);
 
         $city = $request->input('city');
- 
-        return view('weather.show')->with('city', $city);
-    }
 
+        try{
+            $response = Http::get("https://pro.openweathermap.org/data/2.5/weather", [
+                'q' => $city,
+                'appid' => env('WEATHER_API_KEY'),
+                'units' => 'metric',
+            ]);
+            $weatherData = $response->json();
+
+        } catch(\Exception $e){
+            return redirect()->back()->with('error', 'Connection failed');
+        }
+        
+
+        if($weatherData["cod"] == "404"){
+            return redirect()->back()->with('error', "{$city} not found");
+        }elseif($weatherData["cod"] == "401"){
+            return redirect()->back()->with('error', "Invalid API key");
+        }elseif($weatherData["cod"] == "429"){
+            return redirect()->back()->with('error', "Too many requests. Please try again later.");
+        }elseif(in_array($weatherData["cod"], ["500", "502", "503", "504"])){
+            return redirect()->back()->with('error', "Server error. Please try again later");
+        }
+
+        return redirect()->route('weather.index')->with('weatherData', $weatherData);
+    }
 }
