@@ -20,7 +20,7 @@
         <div class="bg-gray-50 text-gray-700 p-4 border-b">
             <div class="mx-auto max-w-screen-lg flex justify-between items-center">
                 <h1 class="text-xl font-bold">Current Weather</h1>
-                <a href="https://github.com/anne-dot/" target="_blank" class="text-sm">GitHub</a>
+                <a href="https://github.com/Anne-dot/weather-api" target="_blank" class="text-sm">GitHub</a>
             </div>
         </div>
     </nav>
