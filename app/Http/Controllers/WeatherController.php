@@ -12,7 +12,6 @@ class WeatherController extends Controller
 
     public function index()
     {
-        // Check if we have weather data in the session
         $weatherData = session('weatherData');
         return view('weather.index', compact('weatherData'));
     }
@@ -28,29 +27,36 @@ class WeatherController extends Controller
 
         $city = $request->input('city');
 
-        try{
-            $response = Http::get("https://pro.openweathermap.org/data/2.5/weather", [
-                'q' => $city,
-                'appid' => env('WEATHER_API_KEY'),
-                'units' => 'metric',
-            ]);
-            $weatherData = $response->json();
+        try {
+            $weatherData = Cache::remember("weather_{$city}", config('services.open_weather_map.cache_duration'), function () use ($city) {
 
-        } catch(\Exception $e){
-            return redirect()->back()->with('error', 'Connection failed');
+                $response = Http::get("https://pro.openweathermap.org/data/2.5/weather", [
+                    'q' => $city,
+                    'appid' => config('services.open_weather_map.key'),
+                    'units' => 'metric',
+                ]);
+
+                Log::info('Full API Response', [
+                    'body' => $response->body(),
+                    'status' => $response->status(),
+                    'headers' => $response->headers()
+                ]);
+                return $response->json();
+            });
+
+            if ($weatherData["cod"] == "404") {
+                return redirect()->back()->with('error', "{$city} not found");
+            } elseif ($weatherData["cod"] == "401") {
+                return redirect()->back()->with('error', "Invalid API key");
+            } elseif ($weatherData["cod"] == "429") {
+                return redirect()->back()->with('error', "Too many requests. Please try again later.");
+            } elseif (in_array($weatherData["cod"], ["500", "502", "503", "504"])) {
+                return redirect()->back()->with('error', "Server error. Please try again later");
+            }
+
+            return redirect()->route('weather.index')->with('weatherData', $weatherData);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Connection failed: ' . $e->getMessage());
         }
-        
-
-        if($weatherData["cod"] == "404"){
-            return redirect()->back()->with('error', "{$city} not found");
-        }elseif($weatherData["cod"] == "401"){
-            return redirect()->back()->with('error', "Invalid API key");
-        }elseif($weatherData["cod"] == "429"){
-            return redirect()->back()->with('error', "Too many requests. Please try again later.");
-        }elseif(in_array($weatherData["cod"], ["500", "502", "503", "504"])){
-            return redirect()->back()->with('error', "Server error. Please try again later");
-        }
-
-        return redirect()->route('weather.index')->with('weatherData', $weatherData);
     }
 }

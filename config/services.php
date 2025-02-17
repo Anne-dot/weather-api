@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'open_weather_map' => [
+        'key' => env('WEATHER_API_KEY'),
+        'cache_duration' => env('WEATHER_CACHE_DURATION', 3600),
+    ],
+
 ];
