@@ -1,5 +1,3 @@
-I'll update the README to include Laravel and Vue in the frontend stack.
-
 # Weather API Project
 
 ## Introduction
